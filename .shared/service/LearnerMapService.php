@@ -483,8 +483,11 @@ class LearnerMapService extends CoreService {
       $qb = QB::instance('learnermap_concept');
       $qb->select()->where('lmid', QB::esc($lmid));
       $result->concepts = $db->query($qb->get());
-      $qb = QB::instance('learnermap_link');
-      $qb->select()->where('lmid', QB::esc($lmid));
+      $qb = QB::instance('learnermap_link ll');
+      $qb->select(QB::raw('ll.*'), QB::raw('l.label'))
+        ->leftJoin('link l', 'l.lid', 'll.lid')
+        ->where('ll.lmid', QB::esc($lmid))
+        ->where('l.cmid', QB::raw('ll.cmid'));
       $result->links = $db->query($qb->get());
       $qb = QB::instance('learnermap_linktarget');
       $qb->select()->where('lmid', QB::esc($lmid));
@@ -576,13 +579,73 @@ class LearnerMapService extends CoreService {
     }
   }
 
+  function getDraftLearnerMapListOfKit($username, $kid) {
+    try {
+      $db = self::instance();
+      $qb = QB::instance('learnermap');
+      $qb->select()
+        ->where('author', QB::esc($username))
+        ->where('kid', $kid === null ? QB::IS : QB::EQ, $kid)
+        ->where('type', 'draft')
+        ->orderBy('create_time', QB::DESC);
+      return $db->query($qb->get());
+    } catch (Exception $ex) {
+      throw CoreError::instance($ex->getMessage());
+    }
+  }
+
+  function getDraftAndFixLearnerMapListOfKit($username, $kid) {
+    try {
+      $db = self::instance();
+      $qb = QB::instance('learnermap');
+      $qb->select()
+        ->where('author', QB::esc($username))
+        ->where('kid', $kid === null ? QB::IS : QB::EQ, $kid)
+        ->where(QB::OG, QB::AND)
+        ->where('type', 'draft')
+        ->where('type', QB::EQ, 'fix', QB::OR)
+        ->where(QB::EG)
+        ->orderBy('create_time', QB::DESC); // echo $qb->get(); exit;
+      return $db->query($qb->get());
+    } catch (Exception $ex) {
+      throw CoreError::instance($ex->getMessage());
+    }
+  }
+
+  function getFeedbackAndSubmitCount($username, $kid) {
+    try {
+      $db = self::instance();
+      $qb = QB::instance('learnermap');
+      $qb->select(QB::raw('COUNT(*) AS feedback'))
+        ->where('author', QB::esc($username))
+        ->where('kid', $kid === null ? QB::IS : QB::EQ, $kid)
+        ->where('type', 'feedback');
+
+      $qa = $qb->get();
+      $qb = QB::instance('learnermap');
+      $qb->select(QB::raw('COUNT(*) AS fix'))
+        ->where('author', QB::esc($username))
+        ->where('kid', $kid === null ? QB::IS : QB::EQ, $kid)
+        ->where('type', 'fix');
+      $qc = $qb->get();
+      $qb = QB::instance('learnermap');
+      $sql = 'SELECT ('.$qa.') AS feedback, ('.$qc.') AS submit';
+      return $db->getRow($sql);
+    } catch (Exception $ex) {
+      throw CoreError::instance($ex->getMessage());
+    }
+  }
+
   function getLearnerMapsOfConceptMap($cmid) {
     try {
       $db = self::instance();
       $qb = QB::instance('learnermap l');
       $qb->select('lmid')
         ->leftJoin('kit k', 'k.kid', 'l.kid')
-        ->where('k.cmid', $cmid);
+        ->where('k.cmid', $cmid)
+        ->orderBy('l.author')
+        ->orderBy('l.kid')
+        ->orderBy('l.create_time');
       $lmids = $db->query($qb->get());
       $learnerMaps = [];
       foreach($lmids as $lm) {

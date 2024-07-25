@@ -436,4 +436,40 @@ class KitBuildApiController extends CoreApi {
     }
   }
 
+  function getDraftLearnerMapListOfKit() {
+    try {
+      $username = $this->postv('username');
+      $kid = $this->postv('kid');
+      $lmService = new LearnerMapService();
+      $learnerMap = $lmService->getDraftLearnerMapListOfKit($username, $kid);
+      CoreResult::instance($learnerMap)->show();
+    } catch (Exception $ex) {
+      CoreError::instance($ex->getMessage())->show();
+    }
+  }
+
+  function getDraftAndFixLearnerMapListOfKit() {
+    try {
+      $username = $this->postv('username');
+      $kid = $this->postv('kid');
+      $lmService = new LearnerMapService();
+      $learnerMap = $lmService->getDraftAndFixLearnerMapListOfKit($username, $kid);
+      CoreResult::instance($learnerMap)->show();
+    } catch (Exception $ex) {
+      CoreError::instance($ex->getMessage())->show();
+    }
+  }
+
+  function getFeedbackAndSubmitCount() {
+    try {
+      $username = $this->postv('username');
+      $kid = $this->postv('kid');
+      $lmService = new LearnerMapService();
+      $learnerMap = $lmService->getFeedbackAndSubmitCount($username, $kid);
+      CoreResult::instance($learnerMap)->show();
+    } catch (Exception $ex) {
+      CoreError::instance($ex->getMessage())->show();
+    }
+  }
+
 }

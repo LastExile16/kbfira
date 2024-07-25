@@ -8,6 +8,11 @@ class CoreRuntime {
   const PATH_MODULE = 'module';
 
   private $runtimes = array();
+  private $settings;
+  private $config;
+
+  private $location;
+  private $module;
 
   public $path;
   public $file;
@@ -95,6 +100,6 @@ class CoreRuntime {
         flock($fp, LOCK_UN);
       }
       fclose($fp);
-    }
+    } else throw CoreError::instance("Error: Unable to open file: <code>$fileName</code> .");
   }
 }

@@ -1,8 +1,8 @@
 <div class="d-flex flex-column vh-100">
-  <a class="position-absolute d-flex align-items-center text-white px-3 text-decoration-none" href="<?php echo $this->location('../home'); ?>">
+  <a class="position-absolute d-flex align-items-center text-dark px-3 text-decoration-none" href="<?php echo $this->location('../home'); ?>">
     <i class="bi bi-house pe-2" style="font-size: 1.8rem;"></i> <span>Home</span>
   </a>
-  <div class="app-navbar d-flex p-2 ps-4" style="border-left: 120px solid #4C9E65;">
+  <div class="app-navbar d-flex p-2 ps-4" style="border-left: 120px solid #ffc107;">
 
     <button class="bt-open-kit btn btn-sm btn-primary"><i class="bi bi-folder2-open"></i> Open Kit</button>
     
@@ -31,7 +31,16 @@
     <div class="flex-fill">&nbsp;</div>
 
     <span>
-      <button class="btn btn-danger btn-sm bt-logout <?php if (!isset($_SESSION['user'])) echo 'd-none'; ?>"><i class="bi bi-power"></i> Logout</button>
+      <div class="btn-group btn-group-sm">
+        
+        <button class="btn btn-outline-secondary btn-sm dropdown-toggle bt-profile <?php if (!isset($_SESSION['user'])) echo 'd-none'; ?>" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-people-fill"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item cgpass fs-6 text-sm" href="#"><i class="bi bi-lock-fill"></i> Change Password</a></li>
+        </ul>
+
+        <button class="btn btn-danger btn-sm bt-logout <?php if (!isset($_SESSION['user'])) echo 'd-none'; ?>"><i class="bi bi-power"></i> Logout</button>
+      </div>
       <button class="btn btn-primary btn-sm bt-sign-in <?php if (isset($_SESSION['user'])) echo 'd-none'; ?>"><i class="bi bi-power"></i> Sign In</button>
     </span>
   
@@ -41,7 +50,7 @@
   </div>
   <div class="d-flex">
     <div class="status-panel flex-fill m-2 mt-0 d-flex"></div>
-    <div class="status-control text-end m-2 mt-0"></div>
+    <div class="status-control text-end m-2 mt-0"><button class="btn btn-primary btn-sm opacity-0">&nbsp;</button></div>
   </div>
     
   <form id="concept-map-open-dialog" class="card d-none">
@@ -143,6 +152,50 @@
     <div class="card-footer text-end">
       <button class="btn btn-sm btn-secondary bt-cancel bt-close px-3"><?php echo Lang::l('ok'); ?></button>
       <button class="btn btn-sm btn-primary bt-modify px-3 ms-1">Modify My Map</button>
+    </div>
+  </div>
+
+  <div id="cgpass-dialog" class="card shadow mx-auto d-none">
+    <div class="card-body">
+      <h5 class="card-title">Change Password</h5>
+      <h6 class="card-subtitle mb-2 text-username"><span class="text-secondary">User</span> &rsaquo; <span class="text-danger user-username"><?php echo isset($_SESSION['user']) ? $_SESSION['user']['username'] : ""; ?></span> &rsaquo; <span class="text-primary user-name"><?php echo isset($_SESSION['user']) ? $_SESSION['user']['name'] : ""; ?></span></h6>
+      <hr>
+      <form id="form-cgpass" class="text-left" class="needs-validation" novalidate>
+        <input type="hidden" name="username" value="<?php echo  isset($_SESSION['user']) ? $_SESSION['user']['username'] : ""; ?>" />
+        <div class="row">
+          <div class="col">
+            <div class="form-group">
+              <label for="password0">Current (old) Password</label>
+              <input type="password" class="form-control" id="password0" required>
+              <div class="password0 invalid-feedback">
+                You must provide your current password.
+              </div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="form-group">
+              <label for="password1">New Password</label>
+              <input type="password" class="form-control" id="password1" required>
+              <div class="password1 invalid-feedback">
+                New password cannot empty.
+              </div>
+            </div>
+            <div class="form-group mt-1">
+              <label for="password2">New Password (Repeat)</label>
+              <input type="password" class="form-control" id="password2" required>
+              <div class="password2 invalid-feedback">
+                New password must be equal.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="text-end"><small class="text-danger">New password should have minimum 8 characters alphanumeric.</small></div>
+        <hr>
+        <div class="text-end">
+          <button class="btn btn-secondary bt-close">Cancel</button>
+          <button type="submit" class="btn btn-primary ms-2 bt-cgpass">Change Password</button>
+        </div>
+      </form>
     </div>
   </div>
 

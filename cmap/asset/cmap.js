@@ -39,16 +39,14 @@ class CmapApp {
     this.session = Core.instance().session();
     this.ajax = Core.instance().ajax();
     this.runtime = Core.instance().runtime();
+    this.config = Core.instance().config();
+    
     // Hack for sidebar-panel show/hide
     // To auto-resize the canvas.
     // let observer = new MutationObserver((mutations) => $(`#${canvas.canvasId} > div`).css('width', 0))
     // observer.observe(document.querySelector('#admin-sidebar-panel'), {attributes: true})
     // Enable tooltip;
     $('[data-bs-toggle="tooltip"]').tooltip();
-
-    // Instantiate temporary collab
-    if (typeof KitBuildCollab == "function")
-      CmapApp.collabInst = KitBuildCollab.instance("cmap", null, canvas);
 
     // Browser lifecycle event
     KitBuildUI.addLifeCycleListener(CmapApp.onBrowserStateChange);
@@ -185,6 +183,10 @@ class CmapApp {
 
     let exportDialog = UI.modal("#concept-map-export-dialog", {
       hideElement: ".bt-cancel",
+    });
+
+    let cgpassDialog = UI.modal('#cgpass-dialog', {
+      hideElement: '.bt-close',
     });
 
     /**
@@ -614,7 +616,135 @@ class CmapApp {
         .animate({ scrollTop: scrollTop + height - 16 }, 200);
       L.log("scroll-more-content");
     });
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    /** 
+     * 
+     * Change password
+    */
+     $('.app-navbar .cgpass').on('click', (e) => {
+      e.preventDefault();
+      this.session.get('user').then((user) => {
+        // console.log(user);
+        $('#cgpass-dialog .user-username').html(user.username);
+        $('#cgpass-dialog .user-name').html(user.name);
+        $('#form-cgpass input[name="username"]').val(user.username);
+        cgpassDialog.show();
+      }, (error) => { 
+        console.error(error);
+        UI.errorDialog(error); 
+      });
+    });
+    $('#form-cgpass').on('submit', (e) => {
+      e.preventDefault();
 
+      let username = $('#form-cgpass input[name="username"]').val();
+      // console.log(username);
+  
+      let p0 = $('#password0').val();
+      let p1 = $('#password1').val();
+      let p2 = $('#password2').val();
+  
+      let valid = true;
+  
+      if (p0 === '') {
+        $('.password0.invalid-feedback').text('Please provide your current password.');
+        $('#password0').addClass('is-invalid');
+        valid = false;
+      } else $('#password0').removeClass('is-invalid').addClass('is-valid');
+  
+      if (p1 === '') {
+        $('.password1.invalid-feedback').text('New password cannot be empty.');
+        $('#password1').addClass('is-invalid');
+        valid = false;
+      } else $('#password1').removeClass('is-invalid').addClass('is-valid');
+  
+      if (p2 === '') {
+        $('.password2.invalid-feedback').text('New password (repeat) cannot be empty.');
+        $('#password2').addClass('is-invalid');
+        valid = false;
+      } else $('#password2').removeClass('is-invalid').addClass('is-valid');
+  
+      if (!valid) return;
+  
+      if (p1 != p2) {
+        $('.password1.invalid-feedback').text('New password and new password (repeat) must be equal');
+        $('#password1').addClass('is-invalid');
+        $('#password2').addClass('is-invalid');
+        return;
+      } else if (!(p1.match(/[a-z]+/gi) && p1.match(/[0-9]+/gi) && p1.length >= 8)) {
+        $('.password1.invalid-feedback').text('Password must contains alphanumeric characters (a-z, 0-9) with at least consisted of 8 or more characters.');
+        $('#password1').addClass('is-invalid');
+        return;
+      } else {
+        $('#password1').removeClass('is-invalid');
+        $('#password2').removeClass('is-invalid');
+      }
+  
+      $('#password1').addClass('is-valid');
+      $('#password2').addClass('is-valid');
+  
+      this.ajax.post('RBACApi/changeUserPassword',
+        {
+          username: username,
+          currentPassword: p0, // current password
+          password: p1,        // new password
+          passwordRepeat: p2   // new password repeat
+        }
+      ).then((result) => {
+        // console.log(result);
+        if (result) {
+          cgpassDialog.hide();
+          UI.successDialog('<span class="text-success">Password has been successfully changed.</span> <br> Next time you log in you will need to use the new password.').show();
+        } else UI.errorDialog('Password change error. Incorrect old password or new password is equal to old password.').show();
+      }, (error) => {
+        // console.error(error);
+        UI.errorDialog('Password change error. Incorrect old password or new password is equal to old password.').show();
+      });
+  
+  
+  
+      // let valid = e.currentTarget.checkValidity();
+      // console.log(valid);
+      // $(e.currentTarget).addClass('was-validated');
+  
+  
+  
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     /**
      *
      * Logout
@@ -670,7 +800,7 @@ class CmapApp {
             L.log("sign-in-success", user);
             this.session.set("user", user);
             this.setUser(user);
-            CmapApp.initCollab(user);
+            this.initCollab(user);
             CmapApp.enableNavbarButton();
             CmapApp.updateSignInOutButton();
             CmapApp.inst.modalSignIn.hide();
@@ -813,7 +943,8 @@ class CmapApp {
       // init collaboration feature
       CmapApp.enableNavbarButton(false);
       if (sessions.user) {
-        CmapApp.initCollab(sessions.user);
+        this.setUser(sessions.user);
+        this.initCollab(sessions.user);
         CmapApp.enableNavbarButton();
         KitBuildCollab.enableControl();
         this.logger.username = sessions.user.username;
@@ -828,6 +959,18 @@ class CmapApp {
       this.canvas.on("event", CmapApp.onCanvasEvent);
     });
   }
+
+  initCollab(user) {
+    CmapApp.collabInst = KitBuildCollab.instance("cmap", user, this.canvas, {
+        host: this.config.get('collabhost'),
+        port: this.config.get('collabport'),
+      }
+    );
+    CmapApp.collabInst.off("event", CmapApp.onCollabEvent);
+    CmapApp.collabInst.on("event", CmapApp.onCollabEvent);
+    KitBuildCollab.enableControl();
+  };
+  
 }
 
 CmapApp.canvasId = "goalmap-canvas";
@@ -1327,31 +1470,19 @@ CmapApp.applyMapState = (mapState) => {
   });
 };
 
-CmapApp.initCollab = (user) => {
-  CmapApp.inst.user = user;
-  CmapApp.collabInst = KitBuildCollab.instance(
-    "cmap",
-    user,
-    CmapApp.inst.canvas
-  );
-  CmapApp.collabInst.off("event", CmapApp.onCollabEvent);
-  CmapApp.collabInst.on("event", CmapApp.onCollabEvent);
-  KitBuildCollab.enableControl();
-};
-
 CmapApp.updateSignInOutButton = () => {
-  Core.instance()
-    .session()
-    .getAll()
-    .then((sessions) => {
-      if (sessions.user) {
-        $(".bt-sign-in").addClass("d-none");
-        $(".bt-logout").removeClass("d-none");
-      } else {
-        $(".bt-sign-in").removeClass("d-none");
-        $(".bt-logout").addClass("d-none");
-      }
-    });
+  Core.instance().session().getAll().then(sessions => { 
+    // console.log(sessions)
+    if (sessions.user) {
+      $('.bt-sign-in').addClass('d-none');
+      $('.bt-logout').removeClass('d-none');
+      $('.bt-profile').removeClass('d-none');
+    } else {
+      $('.bt-sign-in').removeClass('d-none');
+      $('.bt-logout').addClass('d-none');
+      $('.bt-profile').addClass('d-none')
+    }
+  });
 };
 
 CmapApp.enableNavbarButton = (enabled = true) => {

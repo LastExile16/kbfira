@@ -323,6 +323,33 @@ class MakeKitApp {
       partitionTool: partitionTool
     }));
 
+    let textSelectionTool = new KitBuildTextSelectionTool(canvas, {
+      element: '#kit-content-dialog .content'
+    });
+    textSelectionTool.on('event', this.onTextSelectionToolEvent.bind(this));
+    canvas.canvasTool.addTool("text-select", textSelectionTool);
+
+    let distanceColorTool = new KitBuildDistanceColorTool(canvas, {});
+    distanceColorTool.on('event', this.onDistanceColorToolEvent.bind(this));
+    canvas.canvasTool.addTool("distance-color", distanceColorTool);
+    canvas.cy.on('drag', 'node', (e) => {
+      let node = e.target;
+      if (node.data('type') != 'concept') return;
+      if (this.conceptMap) {
+        distanceColorTool.showColor(node, this.conceptMap, canvas);
+      }
+    })
+    canvas.cy.on('dragfree', (e) => {
+      let node = e.target;
+      node.removeStyle('border-color border-opacity');
+    })
+
+    this.bugTool = new KitBuildBugTool(canvas, {
+      dialogContainerSelector: '#admin-content-panel'
+    });
+    this.bugTool.on('event', this.onBugToolEvent.bind(this));
+    canvas.canvasTool.addTool("bug", this.bugTool);
+
     this.canvas = canvas;
     this.session = Core.instance().session();
     this.ajax = Core.instance().ajax();
@@ -361,8 +388,13 @@ class MakeKitApp {
   setKitMap(kitMap) { console.warn("KIT MAP SET:", kitMap)
     this.kitMap = kitMap
     if (kitMap) {
-      this.setConceptMap(kitMap.conceptMap)
-      this.session.set('kid', kitMap.map.kid)
+      this.setConceptMap(kitMap.conceptMap);
+      this.session.set('kid', kitMap.map.kid);
+      if (kitMap && kitMap.map && kitMap.map.text) {
+        this.ajax.get(`contentApi/getText/${kitMap.map.text}`).then(text => {
+          this.contentDialog.setContent(text);
+        });
+      }
       let status = `<span class="mx-2 d-flex align-items-center status-kit">`
         + `<span class="badge rounded-pill bg-primary">ID: ${kitMap.map.kid}</span>`
         + `<span class="text-secondary ms-2 text-truncate"><small>${kitMap.map.name}</small></span>`
@@ -532,6 +564,7 @@ class MakeKitApp {
   
     let optionDialog = UI.modal('#kit-option-dialog', {
       hideElement: '.bt-cancel',
+      width: '750px',
       onShow: () => { 
         let kitMapOptions = optionDialog.kitMap.map.options ?
           JSON.parse(optionDialog.kitMap.map.options) : null
@@ -548,6 +581,8 @@ class MakeKitApp {
         let saveload = $('#kit-option-dialog input[name="saveload"]')
         let reset = $('#kit-option-dialog input[name="reset"]')
         let feedbacksave = $('#kit-option-dialog input[name="feedbacksave"]')
+        let countfb = $('#kit-option-dialog input[name="countfb"]')
+        let countsubmit = $('#kit-option-dialog input[name="countsubmit"]')
         let log = $('#kit-option-dialog input[name="log"]')
   
         if (kitMapOptions.feedbacklevel) feedbacklevel.val(kitMapOptions.feedbacklevel).change()
@@ -576,6 +611,14 @@ class MakeKitApp {
         if (typeof kitMapOptions.feedbacksave != 'undefined')
         feedbacksave.prop('checked', parseInt(kitMapOptions.feedbacksave) == 1 ? true : false)
         else feedbacksave.prop('checked', true)
+
+        if (typeof kitMapOptions.countfb != 'undefined')
+        countfb.prop('checked', parseInt(kitMapOptions.countfb) == 1 ? true : false)
+        else countfb.prop('checked', true);
+
+        if (typeof kitMapOptions.countsubmit != 'undefined')
+        countsubmit.prop('checked', parseInt(kitMapOptions.countsubmit) == 1 ? true : false)
+        else countsubmit.prop('checked', true);
   
         if (typeof kitMapOptions.log != 'undefined')
         log.prop('checked', parseInt(kitMapOptions.log) == 1 ? true : false)
@@ -594,6 +637,8 @@ class MakeKitApp {
       let saveload = $('#kit-option-dialog input[name="saveload"]')
       let reset = $('#kit-option-dialog input[name="reset"]')
       let feedbacksave = $('#kit-option-dialog input[name="feedbacksave"]')
+      let countfb = $('#kit-option-dialog input[name="countfb"]');
+      let countsubmit = $('#kit-option-dialog input[name="countsubmit"]');
       let log = $('#kit-option-dialog input[name="log"]')
   
       feedbackleveldefault.prop('selected', true)
@@ -603,6 +648,8 @@ class MakeKitApp {
       saveload.prop('checked', true)
       reset.prop('checked', true)
       feedbacksave.prop('checked', true)
+      countfb.prop('checked', true);
+      countsubmit.prop('checked', true);
       log.prop('checked', false)
     }
     optionDialog.enableAll = () => {
@@ -613,6 +660,8 @@ class MakeKitApp {
       let saveload = $('#kit-option-dialog input[name="saveload"]')
       let reset = $('#kit-option-dialog input[name="reset"]')
       let feedbacksave = $('#kit-option-dialog input[name="feedbacksave"]')
+      let countfb = $('#kit-option-dialog input[name="countfb"]');
+      let countsubmit = $('#kit-option-dialog input[name="countsubmit"]');
       let log = $('#kit-option-dialog input[name="log"]')
   
       feedbacklevel.val(3).change()
@@ -622,6 +671,8 @@ class MakeKitApp {
       saveload.prop('checked', true)
       reset.prop('checked', true)
       feedbacksave.prop('checked', true)
+      countfb.prop('checked', true);
+      countsubmit.prop('checked', true);
       log.prop('checked', true)
     }
     optionDialog.disableAll = () => {
@@ -632,6 +683,8 @@ class MakeKitApp {
       let saveload = $('#kit-option-dialog input[name="saveload"]')
       let reset = $('#kit-option-dialog input[name="reset"]')
       let feedbacksave = $('#kit-option-dialog input[name="feedbacksave"]')
+      let countfb = $('#kit-option-dialog input[name="countfb"]');
+      let countsubmit = $('#kit-option-dialog input[name="countsubmit"]');
       let log = $('#kit-option-dialog input[name="log"]')
   
       feedbacklevel.val(0).change()
@@ -641,6 +694,8 @@ class MakeKitApp {
       saveload.prop('checked', false)
       reset.prop('checked', false)
       feedbacksave.prop('checked', false)
+      countfb.prop('checked', false);
+      countsubmit.prop('checked', false);
       log.prop('checked', false)
     }
   
@@ -663,9 +718,39 @@ class MakeKitApp {
       textDialog.kitMap = kitMap;
       return textDialog
     }
-  
-  
-  
+
+    this.contentDialog = UI.modal('#kit-content-dialog', {
+      hideElement: '.bt-close',
+      backdrop: false,
+      get height() { return $('body').height() * .7 | 0 },
+      get offset() { return { left: ($('body').width() * .1 | 0) } },
+      draggable: true,
+      dragHandle: '.drag-handle',
+      resizable: true,
+      resizeHandle: '.resize-handle',
+      minWidth: 375,
+      minHeight: 200,
+      onShow: () => {
+        let sdown = new showdown.Converter({
+          strikethrough: true,
+          tables: true,
+          simplifiedAutoLink: true
+        });
+        sdown.setFlavor('github');
+        let htmlText = this.contentDialog.text && this.contentDialog.text.content ? 
+          sdown.makeHtml(this.contentDialog.text.content) : 
+          "<em>Content text unavailable.</em>";
+        $('#kit-content-dialog .content').html(htmlText);
+        if (typeof hljs != "undefined") hljs.highlightAll();
+      }
+    });
+    this.contentDialog.setContent = (text, type = 'md') => {
+      this.contentDialog.text = text;
+      return this.contentDialog;
+    }
+
+    this.bugDialog = UI.modal('#bug-dialog', {});
+    this.bugTool.dialog = this.bugDialog;
   
   
   
@@ -934,6 +1019,8 @@ class MakeKitApp {
         saveload: $('#kit-option-dialog input[name="saveload"]').prop('checked') ? 1 : 0,
         reset: $('#kit-option-dialog input[name="reset"]').prop('checked') ? 1 : 0,
         feedbacksave: $('#kit-option-dialog input[name="feedbacksave"]').prop('checked') ? 1 : 0,
+        countfb: $('#kit-option-dialog input[name="countfb"]').prop('checked') ? 1 : 0,
+        countsubmit: $('#kit-option-dialog input[name="countsubmit"]').prop('checked') ? 1 : 0,
         log: $('#kit-option-dialog input[name="log"]').prop('checked') ? 1 : 0,
       }
   
@@ -945,6 +1032,8 @@ class MakeKitApp {
       if (option.saveload) delete option.saveload
       if (option.reset) delete option.reset
       if (option.feedbacksave) delete option.feedbacksave
+      if (option.countfb) delete option.countfb;
+      if (option.countsubmit) delete option.countsubmit;
       if (!option.log) delete option.log
   
       KitBuild.updateKitOption(optionDialog.kitMap.map.kid, 
@@ -1012,8 +1101,9 @@ class MakeKitApp {
         this.ajax.get(`contentApi/getText/${kitMap.map.text}`).then(text => {
           let assignedTextHtml = `<span class="text-danger">Text:</span> ${text.title} <span class="badge rounded-pill bg-danger bt-unassign px-3 ms-3" role="button" data-text="${text.tid}" data-kid="${textDialog.kitMap.map.kid}">Unassign</span>`
           $("#assigned-text").html(assignedTextHtml)
-        })
-        this.setKitMap(kitMap)
+          this.contentDialog.setContent(text);
+        });
+        this.setKitMap(kitMap);
       }).catch(error => console.error(error))
     })
   
@@ -1026,6 +1116,36 @@ class MakeKitApp {
         $("#assigned-text").html('<em class="text-danger px-3">This kit has no text assigned.</em>')
         this.setKitMap(kitMap)
       }).catch(error => console.error(error))
+    })
+
+
+
+
+
+
+
+
+  
+    /** 
+     * Content
+     * */
+  
+    $('.app-navbar').on('click', '.bt-text', () => { // console.log(RecomposeApp.inst)
+      if (!MakeKitApp.inst.kitMap) {
+        UI.dialog('Please open a kit to see its content.').show();
+        return;
+      }
+      this.contentDialog.show();
+    })
+  
+    $('#kit-content-dialog .bt-scroll-top').on('click', (e) => {
+      $('#kit-content-dialog .content').parent().animate({scrollTop: 0}, 200)
+    })
+  
+    $('#kit-content-dialog .bt-scroll-more').on('click', (e) => {
+      let height = $('#kit-content-dialog .content').parent().height()
+      let scrollTop = $('#kit-content-dialog .content').parent().scrollTop()
+      $('#kit-content-dialog .content').parent().animate({scrollTop: scrollTop + height - 16}, 200)
     })
   
   
@@ -1186,7 +1306,93 @@ class MakeKitApp {
     })
   
   }
+
+  onTextSelectionToolEvent(canvasId, event, data, options) {
+    // console.log(this, canvasId, event, data, options);
+    switch(event) {
+      case 'action':
+        this.contentDialog.show();
+        let element = $('#kit-content-dialog .content').get(0);
+        if (data.start && data.end) {
+          let textSelectionTool = this.canvas.canvasTool.tools.get("text-select");
+          textSelectionTool.restoreSelection(element, {
+            start: data.start,
+            end: data.end
+          });
+        }
+        break;
+      case 'select':
+        if (data.node) {
+          let node = this.canvas.cy.nodes(`#${data.node.id}`);
+          let sel = data.selection;
+          if (sel.start == sel.end) {
+            node.removeData('selectStart selectEnd');
+            UI.error('Text selection has been removed from the selected node.').show();
+          } else {
+            node.data('selectStart', sel.start);
+            node.data('selectEnd', sel.end);
+            UI.success('Text selection has been saved to the selected node.').show();
+          }
+        } 
+        break;
+    }
+  }
+
+  onDistanceColorToolEvent(canvasId, event, data, options) {
+    // console.log(canvasId, event, data, options);
+    switch(event) {
+      case 'action':
+        let cid = data.node.id;
+        let lids = new Set();
+        let cids = new Set();
+        cids.add(cid);
+
+        // find connected links
+        for(let lt of this.conceptMap.linktargets) {
+          if (lt.target_cid == cid) lids.add(lt.lid);
+        }
+        for(let l of this.conceptMap.links) {
+          if (l.source_cid == cid) lids.add(l.lid);
+        } 
+
+        // find all concepts connected to the link
+        for(let l of this.conceptMap.links) {
+          if (lids.has(l.lid)) cids.add(l.source_cid);
+        }
+        for(let l of this.conceptMap.linktargets) {
+          if (lids.has(l.lid)) cids.add(l.target_cid);
+        }
+        
+        // build selection filter
+        let filter = ''
+        cids.forEach(x => filter += filter ? `,[id="${x}"]`: `[id="${x}"]`);
+        let concepts = this.canvas.cy.nodes().filter(filter);
+
+        // select all related concepts.
+        setTimeout(() => {
+          concepts.select().trigger("select");
+          concepts.selectify();
+          if (this.canvas.cy.nodes(":selected").length > 1) {
+            this.canvas.canvasTool.activeTools = [];
+            this.canvas.canvasTool.clearCanvas();
+            this.canvas.canvasTool.drawSelectedNodesBoundingBox();
+          }
+        }, 50);
+        break;
+    }
+  }
   
+  onBugToolEvent(canvasId, event, data, options) {
+    // console.log(canvasId, event, data, options);
+    switch(event) {
+      case 'action':
+        let node = data.node;
+        this.bugDialog.show({width: '300px'});
+        $('#bug-dialog .input-correct-label').val(node['correct-label'] ? node['correct-label'] : node['label']);
+        $('#bug-dialog .input-bug-label').val(node['bug-label']);
+        break;
+    }
+  }
   
   
   

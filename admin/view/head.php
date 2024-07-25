@@ -6,7 +6,7 @@
   <header class="border-bottom">
     <div class="d-flex flex-nowrap align-items-stretch">
       
-      <div class="sidebar-panel overflow-hidden <?php echo $sidebarcollapse ?? ''; ?>">
+      <div class="sidebar-panel overflow-hidden <?php $sidebarcollapse ?? ''; ?>">
         <a href="<?php echo $this->location('../home'); ?>" class="text-dark text-decoration-none mx-3 my-2 d-flex align-items-center" style="white-space: nowrap;">
           <i class="bi bi-slash-square-fill me-2 text-danger fs-4" role="img" aria-label="Bootstrap"></i>
           <span class="text-dark">Kit-Build</span>
@@ -102,7 +102,7 @@
     </div>
   </header>
   <div id="admin-app-container" class="d-flex flex-fill">
-    <div id="admin-sidebar-panel" class="sidebar-panel border-end scroll-y <?php echo $sidebarcollapse ? 'collapsed' : ''; ?>">
+    <div id="admin-sidebar-panel" class="sidebar-panel border-end scroll-y <?php echo isset($sidebarcollapse) && $sidebarcollapse ? 'collapsed' : ''; ?>">
 
       <div class="admin-sidebar-inner px-3">
         <ul>
@@ -117,8 +117,8 @@
           function walk($ms, $lv = 1, $app = '', $pm = null) {
             if (is_array($ms)) {
               if ($pm) $pm->shouldShow = false;
-              foreach($ms as $m) {
-                $show = walk($m, $lv, $app);
+              foreach($ms as $mapp => $m) {
+                $show = walk($m, $lv, $app == "" ? $mapp : $app);
                 if ($show) $pm->shouldShow = true;
               }
             } else {
@@ -138,16 +138,16 @@
           }
           walk($menus);
           // var_dump($menus);
-
-          $this->dwalk = function($ms, $lv = 1, $app = '', $pm = null) {
+          $dwalk = null;
+          $dwalk = function($ms, $lv = 1, $app = '', $pm = null) use (&$dwalk) {
             if (is_array($ms)) {
-              foreach($ms as $m) ($this->dwalk)($m, $lv, $app);
+              foreach($ms as $mapp => $m) ($dwalk)($m, $lv, $app == "" ? $mapp : $app);
             } else {
               if (isset($ms->menu)) { // it has sub-menus
                 if (!$ms->shouldShow) return; // childs of this menu were not authorized, hide it.
                 if (isset($ms->heading)) { // this is app heading
                   echo '<li class="admin-sidebar-heading">'.$ms->heading.'</li>';
-                  ($this->dwalk)($ms->menu, $lv, $app, $ms);
+                  ($dwalk)($ms->menu, $lv, $app, $ms);
                 } else {
                   echo "<li>";
                   echo '<a class="has-submenu collapsed">';
@@ -155,12 +155,12 @@
                   echo '<span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">'.$ms->label."</span>";
                   echo '</a>';
                   echo "<ul>";
-                  ($this->dwalk)($ms->menu, $lv + 1, $app, $ms);
+                  ($dwalk)($ms->menu, $lv + 1, $app, $ms);
                   echo "</ul>";
                   echo "</li>";
                 }
               } else {
-                echo "<li>";
+                echo "<li " . (property_exists($ms, 'id') ? 'data-id="' . $app . "-" . $ms->id . '"' : '') . ">";
                 echo '<a '. (@$ms->url ? 'href="' . $this->location($ms->url, 'm/x/') . '" ' : '').'>';
                 if ($lv == 1 && @$ms->icon) echo '<i class="bi bi-'.$ms->icon.'"></i>';
                 echo '<span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">'.$ms->label."</span>";
@@ -170,7 +170,7 @@
             }
           };
 
-          if (isset($_SESSION['user'])) ($this->dwalk)($menus);
+          if (isset($_SESSION['user'])) ($dwalk)($menus);
 
           // var_dump($menus);
           // $this->buildMenu = function($menu, $lv = 1, $app = '') {

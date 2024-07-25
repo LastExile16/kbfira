@@ -1,6 +1,14 @@
-$(() => { // jQuery onReady callback
+$(() => { 
+  // jQuery onReady callback
   let app = KitBuildExtApp.instance()
 })
+
+// short hand for logger class
+// so to log something, one could simply use:
+// Log.l('action', data);
+class L {
+  static log() {}
+}
 
 class KitBuildExtApp {
   constructor() {
@@ -17,6 +25,9 @@ class KitBuildExtApp {
     this.canvas = canvas;
     this.session = Core.instance().session();
     this.ajax = Core.instance().ajax();
+    this.runtime = Core.instance().runtime();
+    this.config = Core.instance().config();
+
     // Hack for sidebar-panel show/hide
     // To auto-resize the canvas.
     // AA
@@ -24,9 +35,6 @@ class KitBuildExtApp {
     // observer.observe(document.querySelector('#admin-sidebar-panel'), {attributes: true})
     // Enable tooltip
     $('[data-bs-toggle="tooltip"]').tooltip({ html: true })
-
-    if (typeof KitBuildCollab == 'function')
-      KitBuildExtApp.collabInst = KitBuildCollab.instance('kitbuild', null, canvas)
 
     // Browser lifecycle event
     KitBuildUI.addLifeCycleListener(KitBuildExtApp.onBrowserStateChange)
@@ -47,6 +55,10 @@ class KitBuildExtApp {
   static instance() {
     KitBuildExtApp.inst = new KitBuildExtApp()
     return KitBuildExtApp.inst;
+  }
+
+  setUser(user = null) {
+    this.user = user;
   }
 
   setConceptMap(conceptMap) { console.warn("CONCEPT MAP SET:", conceptMap)
@@ -84,12 +96,21 @@ class KitBuildExtApp {
       let status = `<span class="mx-2 d-flex align-items-center status-kit">`
         + `<span class="badge rounded-pill bg-primary" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="${tooltipText}">ID: ${kitMap.map.kid}</span>`
         + `<span class="text-secondary ms-2 text-truncate"><small>${kitMap.map.name}</small></span>`
-        + `</span>`
+        + `</span>`;
+      KitBuild.getTextOfKit(kitMap.map.kid).then((text) => {
+        this.text = text;
+        let textLabel = text ? `Text: ${text.title}` : "Text: None";
+        let statusText = `<span class="mx-2 d-flex align-items-center status-text">`;
+        statusText += `<span class="badge rounded-pill bg-danger">${textLabel}</span>`;
+        statusText += `</span>`;
+        StatusBar.instance().remove(".status-text").append(statusText);
+      });        
       StatusBar.instance().remove('.status-kit').append(status);
     } else {
-      this.setConceptMap()
+      this.setConceptMap();
+      this.text = null;
       StatusBar.instance().remove('.status-kit');
-      this.session.unset('kid')
+      this.session.unset('kid');
     }
     $('[data-bs-toggle="tooltip"]').tooltip({ html: true })
   }
@@ -168,11 +189,24 @@ class KitBuildExtApp {
       resizeHandle: '.resize-handle',
       minWidth: 375,
       minHeight: 200,
-      onShow: () => {}
+      onShow: () => {
+        let sdown = new showdown.Converter({
+          strikethrough: true,
+          tables: true,
+          simplifiedAutoLink: true,
+        });
+        sdown.setFlavor("github");
+        // console.log(contentDialog.text, contentDialog);
+        let htmlText = contentDialog.text
+          ? sdown.makeHtml(contentDialog.text.content)
+          : "<em>Content text unavailable.</em>";
+        $("#kit-content-dialog .content").html(htmlText);
+        hljs.highlightAll();
+      }
     })
-    contentDialog.setContent = (content, type = 'plain') => {
-      contentDialog.content = content
-      return contentDialog
+    contentDialog.setContent = (content, type = 'md') => {
+      contentDialog.text = content;
+      return contentDialog;
     }
   
     let feedbackDialog = UI.modal('#feedback-dialog', {
@@ -213,7 +247,11 @@ class KitBuildExtApp {
       $('#feedback-dialog .feedback-content').html(content)
       return feedbackDialog
     }
-  
+
+    let cgpassDialog = UI.modal('#cgpass-dialog', {
+      hideElement: '.bt-close',
+    });
+    
   
   
   
@@ -245,7 +283,8 @@ class KitBuildExtApp {
       $(e.currentTarget).find('.bi-check-lg').removeClass('d-none');
       $(e.currentTarget).addClass('active');
   
-      this.ajax.get(`kitBuildApi/getConceptMapListByTopic/${openDialog.tid}`).then(cmaps => { // console.log(cmaps)
+      this.ajax.get(`kitBuildApi/getConceptMapListByTopic/${openDialog.tid}`).then(cmaps => { 
+        // console.log(cmaps)
         let cmapsHtml = '';
         cmaps.forEach(cm => {
           cmapsHtml += `<span class="concept-map list-item" data-cmid="${cm.cmid}" data-cmfid="${cm.cmfid}">`
@@ -412,7 +451,7 @@ class KitBuildExtApp {
   
     $('.app-navbar').on('click', '.bt-content', () => {
       if (!this.kitMap) return;
-      else contentDialog.setContent().show();
+      else contentDialog.setContent(this.text).show();
     })
   
     $('#kit-content-dialog .bt-scroll-top').on('click', (e) => {
@@ -629,7 +668,7 @@ class KitBuildExtApp {
       Analyzer.showCompareMap(compare, this.canvas.cy, direction, level)
       this.canvas.canvasTool.enableIndicator(false).enableConnector(false)
         .clearCanvas().clearIndicatorCanvas()
-      console.log(compare, level)
+      // console.log(compare, level)
       feedbackDialog.setCompare(compare, dialogLevel).show()
   
       
@@ -661,6 +700,11 @@ class KitBuildExtApp {
      * Extend with Next Kit Set
     */
      $('.app-navbar').on('click', '.bt-extend', () => {
+
+      if (!this.kitMap) {
+        UI.warningDialog("Please open a kit to build.").show();
+        return;
+      }
   
       let kitMapData = this.kitMap;
       let kitSet = this.kitSet;
@@ -749,9 +793,14 @@ class KitBuildExtApp {
     */
     $('.app-navbar').on('click', '.bt-submit', () => {
       if (feedbackDialog.learnerMapEdgesData) 
-        $('.app-navbar .bt-clear-feedback').trigger('click')
+        $('.app-navbar .bt-clear-feedback').trigger('click');
+      
+      if (!this.kitMap) {
+        UI.warningDialog("Please open a kit to build.").show();
+        return;
+      }
   
-      let learnerMapData = KitBuildUI.buildConceptMapData(this.canvas)
+      let learnerMapData = KitBuildUI.buildConceptMapData(this.canvas);
       let confirm = UI.confirm("Do you want to submit your concept map?<br/>This will end your concept map recomposition session.")
         .positive(() => {
           let kitMap = this.kitMap
@@ -804,7 +853,116 @@ class KitBuildExtApp {
   
   
   
+    /** 
+     * 
+     * Change password
+    */
+     $('.app-navbar .cgpass').on('click', (e) => {
+      e.preventDefault();
+      this.session.get('user').then((user) => {
+        // console.log(user);
+        $('#cgpass-dialog .user-username').html(user.username);
+        $('#cgpass-dialog .user-name').html(user.name);
+        $('#form-cgpass input[name="username"]').val(user.username);
+        cgpassDialog.show();
+      }, (error) => { 
+        console.error(error);
+        UI.errorDialog(error); 
+      });
+    });
+    $('#form-cgpass').on('submit', (e) => {
+      e.preventDefault();
+
+      let username = $('#form-cgpass input[name="username"]').val();
+      // console.log(username);
   
+      let p0 = $('#password0').val();
+      let p1 = $('#password1').val();
+      let p2 = $('#password2').val();
+  
+      let valid = true;
+  
+      if (p0 === '') {
+        $('.password0.invalid-feedback').text('Please provide your current password.');
+        $('#password0').addClass('is-invalid');
+        valid = false;
+      } else $('#password0').removeClass('is-invalid').addClass('is-valid');
+  
+      if (p1 === '') {
+        $('.password1.invalid-feedback').text('New password cannot be empty.');
+        $('#password1').addClass('is-invalid');
+        valid = false;
+      } else $('#password1').removeClass('is-invalid').addClass('is-valid');
+  
+      if (p2 === '') {
+        $('.password2.invalid-feedback').text('New password (repeat) cannot be empty.');
+        $('#password2').addClass('is-invalid');
+        valid = false;
+      } else $('#password2').removeClass('is-invalid').addClass('is-valid');
+  
+      if (!valid) return;
+  
+      if (p1 != p2) {
+        $('.password1.invalid-feedback').text('New password and new password (repeat) must be equal');
+        $('#password1').addClass('is-invalid');
+        $('#password2').addClass('is-invalid');
+        return;
+      } else if (!(p1.match(/[a-z]+/gi) && p1.match(/[0-9]+/gi) && p1.length >= 8)) {
+        $('.password1.invalid-feedback').text('Password must contains alphanumeric characters (a-z, 0-9) with at least consisted of 8 or more characters.');
+        $('#password1').addClass('is-invalid');
+        return;
+      } else {
+        $('#password1').removeClass('is-invalid');
+        $('#password2').removeClass('is-invalid');
+      }
+  
+      $('#password1').addClass('is-valid');
+      $('#password2').addClass('is-valid');
+  
+      this.ajax.post('RBACApi/changeUserPassword',
+        {
+          username: username,
+          currentPassword: p0, // current password
+          password: p1,        // new password
+          passwordRepeat: p2   // new password repeat
+        }
+      ).then((result) => {
+        // console.log(result);
+        if (result) {
+          cgpassDialog.hide();
+          UI.successDialog('<span class="text-success">Password has been successfully changed.</span> <br> Next time you log in you will need to use the new password.').show();
+        } else UI.errorDialog('Password change error. Incorrect old password or new password is equal to old password.').show();
+      }, (error) => {
+        // console.error(error);
+        UI.errorDialog('Password change error. Incorrect old password or new password is equal to old password.').show();
+      });
+  
+  
+  
+      // let valid = e.currentTarget.checkValidity();
+      // console.log(valid);
+      // $(e.currentTarget).addClass('was-validated');
+  
+  
+  
+    });
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    
     /** 
      * 
      * Logout
@@ -851,36 +1009,35 @@ class KitBuildExtApp {
      * 
      * Sign In
     */
-    $('.app-navbar .bt-sign-in').on('click', (e) => {
-      this.modalSignIn = UI.modal('#modal-sign-in', {
-        width: 350,
-        onShow: () => {}
-      })
-      this.modalSignIn.show()
-    })
-  
-    $('#modal-sign-in').on('click', '.bt-sign-in', (e) => {
-      e.preventDefault();
-      let username = $('#input-username').val();
-      let password = $('#input-password').val();
-      KitBuildRBAC.signIn(username, password).then(user => { console.log(user)
-        if (typeof user == 'object' && user) {
-          this.session.set('user', user).then(() => {
-            KitBuildExtApp.updateSignInOutButton();
-            KitBuildExtApp.enableNavbarButton();
-            KitBuildExtApp.initCollab(user);
-          })
-          this.modalSignIn.hide()
-          this.user = user;
-  
-          let status = `<span class="mx-2 d-flex align-items-center status-user">`
-          + `<small class="text-dark fw-bold">${user.name}</small>`
-          + `</span>`
-          StatusBar.instance().remove('.status-user').prepend(status);
-        }
-      }).catch(error => UI.error(error).show());
-    })
-  
+     $(".app-navbar .bt-sign-in").on("click", (e) => {
+      this.runtime.load("config.ini").then((runtimes) => {
+        let runtimeGids = runtimes["sign-in-group"];
+        // console.log(runtimes, runtimeGids);
+        this.signInDialog(runtimeGids);
+      }, (err) => this.signInDialog());
+    });
+
+  }
+
+  signInDialog(runtimeGids) {
+    this.modalSignIn = SignIn.instance({
+      gids: runtimeGids ?? null,
+      success: (user) => {
+        L.log("sign-in-success", user);
+        this.session.set("user", user);
+        this.modalSignIn.hide();
+        this.setUser(user);
+        this.initCollab(user);
+        KitBuildExtApp.updateSignInOutButton();
+        KitBuildExtApp.enableNavbarButton();
+        KitBuildCollab.enableControl();
+        let status = `<span class="mx-2 d-flex align-items-center status-user">` +
+          `<small class="text-dark fw-bold">${user.name}</small>` +
+          `</span>`;
+        StatusBar.instance().remove(".status-user").prepend(status);
+        this.logger.username = user.username;
+      },
+    }).show();
   }
   
   /**
@@ -945,7 +1102,8 @@ class KitBuildExtApp {
   
       KitBuildExtApp.enableNavbarButton(false);
       if (sessions.user) {
-        KitBuildExtApp.initCollab(sessions.user);
+        this.setUser(sessions.user);
+        this.initCollab(sessions.user);
         KitBuildExtApp.enableNavbarButton();
         KitBuildCollab.enableControl();
   
@@ -960,6 +1118,16 @@ class KitBuildExtApp {
   
   
     })
+  }
+
+  initCollab(user) {
+    KitBuildExtApp.collabInst = KitBuildCollab.instance('kitbuildext', user, this.canvas, {
+      host: this.config.get('collabhost'),
+      port: this.config.get('collabport'),
+    });
+    KitBuildExtApp.collabInst.off('event', KitBuildExtApp.onCollabEvent);
+    KitBuildExtApp.collabInst.on('event', KitBuildExtApp.onCollabEvent);
+    KitBuildCollab.enableControl();
   }
 
 }
@@ -1421,22 +1589,16 @@ KitBuildExtApp.parseOptions = (optionJsonString, defaultValueIfNull) => {
   return option
 }
 
-KitBuildExtApp.initCollab = (user) => {
-  KitBuildExtApp.inst.user = user;
-  KitBuildExtApp.collabInst = KitBuildCollab.instance('kitbuild', user, KitBuildExtApp.inst.canvas)
-  KitBuildExtApp.collabInst.off('event', KitBuildExtApp.onCollabEvent)
-  KitBuildExtApp.collabInst.on('event', KitBuildExtApp.onCollabEvent)
-  KitBuildCollab.enableControl()
-}
-
 KitBuildExtApp.updateSignInOutButton = () => {
   Core.instance().session().getAll().then(sessions => { // console.log(sessions)
     if (sessions.user) {
-      $('.bt-sign-in').addClass('d-none')
-      $('.bt-logout').removeClass('d-none')
+      $('.bt-sign-in').addClass('d-none');
+      $('.bt-logout').removeClass('d-none');
+      $('.bt-profile').removeClass('d-none');
     } else {
-      $('.bt-sign-in').removeClass('d-none')
-      $('.bt-logout').addClass('d-none')
+      $('.bt-sign-in').removeClass('d-none');
+      $('.bt-logout').addClass('d-none');
+      $('.bt-profile').addClass('d-none')
     }
   });
 }
@@ -1447,6 +1609,7 @@ KitBuildExtApp.enableNavbarButton = (enabled = true) => {
   $('#recompose-saveload button').prop('disabled', !enabled);
   $('#recompose-reset button').prop('disabled', !enabled);
   $('#recompose-feedbacklevel button').prop('disabled', !enabled);
+  $('#recompose-extend button').prop('disabled', !enabled);
   $('.bt-submit').prop('disabled', !enabled);
   $('.bt-open-kit').prop('disabled', !enabled);
   KitBuildExtApp.inst.canvas.toolbar.tools.forEach(tool => {

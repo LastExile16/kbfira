@@ -1,8 +1,8 @@
 <div class="app-navbar d-flex p-2 border-bottom">  
   <button class="bt-open btn btn-sm btn-primary"><i class="bi bi-folder2-open"></i> Open Concept Map</button>
-  <button class="bt-teacher-map btn btn-sm btn-primary ms-2"><i class="bi bi-person-video3"></i> Teacher Map</button>
-  <button class="bt-student-map btn btn-sm btn-primary ms-2"><i class="bi bi-person-video2"></i> Student Map</button>
-  <button class="bt-compare-map btn btn-sm btn-primary ms-2"><i class="bi bi-intersect"></i> Compare Map</button>
+  <button class="bt-teacher-map btn btn-sm btn-secondary ms-2"><i class="bi bi-person-video3"></i> Teacher Map</button>
+  <button class="bt-student-map btn btn-sm btn-secondary ms-2"><i class="bi bi-person-video2"></i> Student Map</button>
+  <button class="bt-compare-map btn btn-sm btn-success ms-2"><i class="bi bi-intersect"></i> Compare Map</button>
 </div>
 
 <div class="d-flex flex-fill align-items-stretch">
@@ -17,7 +17,7 @@
       <input type="checkbox" class="cb-score ms-1" id="cb-lm-auto"> <label for="cb-lm-auto" class="mx-1">Autosave</label>
       <input type="checkbox" class="cb-score ms-1" id="cb-lm-draft"> <label for="cb-lm-draft" class="mx-1">Draft</label>
       <input type="checkbox" class="cb-score ms-1" id="cb-lm-feedback"> <label for="cb-lm-feedback" class="mx-1">Feedback</label>
-      <input type="checkbox" class="cb-score ms-1" id="cb-lm-final" checked> <label for="cb-lm-final" class="mx-1">Final</label>
+      <input type="checkbox" class="cb-score ms-1" id="cb-lm-fix" checked> <label for="cb-lm-fix" class="mx-1">Submitted</label>
     </div>
     <div class="d-flex align-items-center p-1 border-bottom text-smaller justify-content-end">
       <input type="checkbox" class="cb-score ms-1" id="cb-lm-all"> <label for="cb-lm-all" class="mx-1">All</label>
@@ -25,7 +25,13 @@
       <input type="checkbox" class="cb-score ms-1" id="cb-lm-last" checked> <label for="cb-lm-last" class="mx-1">Last</label>
     </div>
     <div class="d-flex justify-content-between align-items-center p-1 border-bottom text-smaller">
-      <span class="ms-1">Concept Map</span>
+      <span>
+        <span class="ms-1">Concept Map</span>
+        <span class="ms-2 bt-download-xlsx" role="button">
+          <i class="bi bi-download text-primary"></i>
+          <span class="btn-link">Download (XLSX)</span>
+        </span>
+      </span>
       <span class="d-flex align-items-center">
         <input type="checkbox" id="cb-lm-score" class="me-1">
         <label for="cb-lm-score" class="me-1" role="button">Score</label>
@@ -94,3 +100,32 @@
     </div>
   </div>
 </form>
+
+
+
+
+<div id="proposition-dialog" class="card d-none">
+  <h6 class="card-header d-flex">
+    <span class="drag-handle flex-fill"><i class="dialog-icon bi bi-bezier me-2"></i> <span class="dialog-title">Propositions</span></span>
+    <i class="bi bi-x-lg bt-close bt-x" role="button"></i>
+  </h6>
+  <div class="card-body">
+    <div class="proposition-list"></div>
+  </div>
+  <div class="card-footer text-end">
+    <button class="btn btn-sm btn-secondary bt-close px-5"><?php echo Lang::l('ok'); ?></button>
+  </div>
+</div>
+
+<div id="proposition-author-dialog" class="card d-none">
+  <h6 class="card-header d-flex">
+    <span class="drag-handle flex-fill"><i class="dialog-icon bi bi-bezier me-2"></i> <span class="dialog-title">Proposition Authors</span></span>
+    <i class="bi bi-x-lg bt-close bt-x" role="button"></i>
+  </h6>
+  <div class="card-body">
+    <div class="author-list scroll-y" style="max-height: 150px;"></div>
+  </div>
+  <div class="card-footer text-end">
+    <button class="btn btn-sm btn-secondary bt-close px-5"><?php echo Lang::l('ok'); ?></button>
+  </div>
+</div>

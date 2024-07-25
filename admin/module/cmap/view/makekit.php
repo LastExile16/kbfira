@@ -3,13 +3,11 @@
   <div class="btn-group btn-group-sm ms-2">
     <button class="bt-open-kit btn btn-primary"><i class="bi bi-folder2-open"></i> Open Kit</button>
     <button class="bt-close-kit btn btn-primary"><i class="bi bi-x-lg"></i> Close Kit</button>
-    <button class="bt-option btn btn-primary"><i class="bi bi-sliders"></i> Options</button>
-    <button class="bt-content btn btn-primary"><i class="bi bi-file-text"></i> Content</button>
-    <button class="bt-save btn btn-primary"><i class="bi bi-save"></i> <?php echo Lang::l('save'); ?></button>
-    <button class="bt-save-as btn btn-primary"><i class="bi bi-front"></i> <?php echo Lang::l('save-as'); ?></button>
-    <!-- <button class="bt-export btn btn-primary"><i class="bi bi-send"></i> Export</button> -->
   </div>
-    
+  <div class="btn-group btn-group-sm ms-2">
+    <button class="bt-option btn btn-warning text-dark"><i class="bi bi-sliders"></i> Options</button>
+    <button class="bt-content btn btn-warning text-dark"><i class="bi bi-file-text"></i> Content</button>
+  </div>
   <div class="btn-group btn-group-sm ms-2">
     <button class="bt-toggle-left btn btn-sm btn-warning" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Toggle outgoing edges"><i class="bi bi-box-arrow-up-right"></i></button>
     <button class="bt-toggle-right btn btn-sm btn-warning" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Toggle incoming edges"><i class="bi bi-box-arrow-in-up-right"></i></button>
@@ -17,7 +15,12 @@
     <button class="bt-restore btn btn-sm btn-warning" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Restore all edges"><i class="bi bi-check2-square"></i></button>
     <button class="bt-reset btn btn-sm btn-warning" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Reset to goalmap settings"><i class="bi bi-arrow-repeat"></i> <?php echo Lang::l('reset'); ?></button>
   </div>
-
+  <div class="btn-group btn-group-sm ms-2">
+    <button class="bt-save btn btn-primary"><i class="bi bi-save"></i> <?php echo Lang::l('save'); ?></button>
+    <button class="bt-save-as btn btn-primary"><i class="bi bi-front"></i> <?php echo Lang::l('save-as'); ?></button>
+    <!-- <button class="bt-export btn btn-primary"><i class="bi bi-send"></i> Export</button> -->
+  </div>  
+  
 </div>
 <div class="d-flex flex-fill align-items-stretch">
   <?php $this->pluginView('kitbuild-ui', ["id" => "makekit-canvas"], 0); ?>
@@ -151,58 +154,74 @@
       Options for Kit-Building activity of using this Kit
     </div></div>
     <div class="row">
-      <div class="col-sm-12">
-        <label class="form-label">Feedback given during recomposition.</label>
-      </div>
-      <div class="col-sm-2 mb-3"></div>
-      <div class="col-sm-10 mb-3">
-        <select class="form-select form-select-sm" name="feedbacklevel">
-          <option value="0">Level 0 - No Feedback</option>
-          <option value="1">Level 1 - Count Only</option>
-          <option class="default" value="2">Level 2 - Count and Edge Visual</option>
-          <option value="3">Level 3 - Count, Edge Visual, and Expected Edge</option>
-        </select>
-      </div> 
-      <div class="col-sm-12 mb-2">  
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" name="fullfeedback" id="input-fullfeedback">
-          <label class="form-check-label" for="input-fullfeedback">Provide full feedback after submit.</label>
+      <div class="col-sm-6">
+        <div class="col-sm-12">
+          <label class="form-label">Feedback given during recomposition.</label>
+        </div>
+        <div class="col-sm-10 mb-3">
+          <select class="form-select form-select-sm" name="feedbacklevel">
+            <option value="0">Level 0 - No Feedback</option>
+            <option value="1">Level 1 - Count Only</option>
+            <option class="default" value="2">Level 2 - Count and Edge Visual</option>
+            <option value="3">Level 3 - Count, Edge Visual, and Expected Edge</option>
+          </select>
+        </div> 
+
+        <div class="col-sm-12 mb-2">  
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="modification" id="input-modification">
+            <label class="form-check-label" for="input-modification">Allow modification of concept map after submit.</label>
+          </div>
+        </div>
+        <div class="col-sm-12 mb-2">  
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="readcontent" id="input-readcontent">
+            <label class="form-check-label" for="input-readcontent">Allow read topic/kit content.</label>
+          </div>
+        </div>
+        <div class="col-sm-12 mb-2">  
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="saveload" id="input-saveload">
+            <label class="form-check-label" for="input-saveload">Allow save and load recomposed concept map.</label>
+          </div>
+        </div>
+        <div class="col-sm-12 mb-2">  
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="reset" id="input-reset">
+            <label class="form-check-label" for="input-reset">Allow reset concept map to initial kit.</label>
+          </div>
         </div>
       </div>
-      <div class="col-sm-12 mb-2">  
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" name="modification" id="input-modification">
-          <label class="form-check-label" for="input-modification">Allow modification of concept map after submit.</label>
+      <div class="col-sm-6">
+        <div class="col-sm-12 mb-2">  
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="fullfeedback" id="input-fullfeedback">
+            <label class="form-check-label" for="input-fullfeedback">Provide full feedback after submit.</label>
+          </div>
         </div>
-      </div>
-      <div class="col-sm-12 mb-2">  
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" name="readcontent" id="input-readcontent">
-          <label class="form-check-label" for="input-readcontent">Allow read topic/kit content.</label>
+        <div class="col-sm-12 mb-2">  
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="feedbacksave" id="input-feedbacksave">
+            <label class="form-check-label" for="input-feedbacksave">Capture concept map state when feedback is requested.</label>
+          </div>
         </div>
-      </div>
-      <div class="col-sm-12 mb-2">  
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" name="saveload" id="input-saveload">
-          <label class="form-check-label" for="input-saveload">Allow save and load recomposed concept map.</label>
+        <div class="col-sm-12 mb-2">  
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="countfb" id="input-countfb">
+            <label class="form-check-label" for="input-countfb">Show the number of feedback given.</label>
+          </div>
         </div>
-      </div>
-      <div class="col-sm-12 mb-2">  
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" name="reset" id="input-reset">
-          <label class="form-check-label" for="input-reset">Allow reset concept map to initial kit.</label>
+        <div class="col-sm-12 mb-2">  
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="countsubmit" id="input-countsubmit">
+            <label class="form-check-label" for="input-countsubmit">Show the number of submission performed.</label>
+          </div>
         </div>
-      </div>  
-      <div class="col-sm-12 mb-2">  
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" name="feedbacksave" id="input-feedbacksave">
-          <label class="form-check-label" for="input-feedbacksave">Capture concept map state when feedback is requested.</label>
-        </div>
-      </div>
-      <div class="col-sm-12 mb-2">  
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" name="log" id="input-log">
-          <label class="form-check-label" for="input-log">Log concept mapping activity of this kit for analysis.</label>
+        <div class="col-sm-12 mb-2">  
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="log" id="input-log">
+            <label class="form-check-label" for="input-log">Log concept mapping activity of this kit for analysis.</label>
+          </div>
         </div>
       </div>
       <div class="col-sm-12 mt-2">
@@ -239,5 +258,42 @@
   </div>
   <div class="card-footer text-end">
     <button class="btn btn-sm btn-secondary bt-close px-4"><?php echo Lang::l('close'); ?></button>
+  </div>
+</div>
+
+<div id="kit-content-dialog" class="card d-none">
+  <h6 class="card-header d-flex">
+    <span class="drag-handle flex-fill"><i class="dialog-icon bi bi-file-text"></i> <span class="dialog-title">Content</span></span>
+    <i class="bi bi-x-lg bt-close bt-x" role="button"></i>
+  </h6>
+  <div class="card-body position-relative overflow-hidden overflow-scroll d-flex flex-fill mb-3">
+    <div class="content text-secondary"></div>
+  </div>
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <span>
+      <span class="bt-scroll-top btn btn-sm ms-1 btn-primary px-3"><i class="bi bi-chevron-bar-up"></i> Back to Top</span>
+      <span class="bt-scroll-more btn btn-sm ms-1 btn-primary px-3"><i class="bi bi-chevron-down"></i> More</span>
+    </span>
+    <span>
+      <button class="btn btn-sm btn-secondary bt-close px-3"><?php echo Lang::l('close'); ?></button>
+      <button class="btn btn-sm resize-handle pe-0 ps-3"><i class="bi bi-textarea-resize"></i></button>
+    </span>
+  </div>
+</div>
+
+<div id="bug-dialog" class="align-items-center" style="display: none;">
+  <div class="card">
+    <div class="card-body">
+      <span class="mt-2 mb-1 d-block"><small>Correct Label</small></span>
+      <input type="text" class="form-control form-control-sm mb-1 input-correct-label" placeholder="Correct Label" aria-label="New Topic Name" aria-describedby="button-create-new-topic">
+      <span class="mt-2 mb-1 d-block"><small>Bug Label</small></span>
+      <input type="text" class="form-control form-control-sm mb-1 input-bug-label" placeholder="Bug Label" aria-label="New Topic Name" aria-describedby="button-create-new-topic">
+      <small>Separate bug labels with comma as the options for students to choose.</small>
+      <hr>
+      <div class="d-flex justify-content-end">
+        <button class="btn btn-sm btn-danger bt-remove-bug" type="button"><i class="bi bi-x-lg"></i> Remove Bug</button>
+        <button class="btn btn-sm btn-primary bt-set-bug ms-1" type="button"><i class="bi bi-bug"></i> Set Bug</button>
+      </div>
+    </div>
   </div>
 </div>
